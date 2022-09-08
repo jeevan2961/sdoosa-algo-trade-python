@@ -18,16 +18,12 @@ class ICICIDirectLogin(BaseLogin):
     if 'API_Session' in args:
       requestToken = args['API_Session']
       logging.info('ICICI API_session_token = %s', requestToken)
-      # session = brokerHandle.generate_session(requestToken, api_secret=self.brokerAppDetails.appSecret)
       brokerHandle.generate_session(api_secret=self.brokerAppDetails.appSecret, session_token=requestToken)
-
-      # accessToken = session['access_token']
-      # accessToken = accessToken
       accessToken = requestToken
       logging.info('ICICI accessToken = %s', accessToken)
       # brokerHandle.set_access_token(accessToken)
       
-      logging.info('Zerodha Login successful. accessToken = %s', accessToken)
+      logging.info('ICICIDirect Login successful. accessToken = %s', accessToken)
 
       # set broker handle and access token to the instance
       self.setBrokerHandle(brokerHandle)

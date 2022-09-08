@@ -46,8 +46,4 @@ brokerAppConfig = getBrokerAppConfig()
 logging.info('brokerAppConfig => %s', brokerAppConfig)
 
 port = serverConfig['port']
-
-# os.environ.pop("FLASK_RUN_FROM_CLI")
-# os.environ.pop("FLASK_ENV")
-
 app.run('localhost', port)
