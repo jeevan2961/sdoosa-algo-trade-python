@@ -28,13 +28,22 @@
     }
   </script>
 
+  <script>
+    function loginToICICIBroker() {
+      window.location.href =  "http://localhost:8080" + "/apis/broker/login/icicidirect"
+    }
+  </script>
+
 </head>
 
 <body>
   <h1 style="color: blue" class="center">Welcome to algo trading in python</h1>
   <div class="center">
     <button class="button" onClick="loginToBroker()">
-      Login to Broker
+      Login to Zerodha Broker
+    </button>
+    <button class="button" onClick="loginToICICIBroker()">
+      Login to ICICI Broker
     </button>
   </div>
 </body>
