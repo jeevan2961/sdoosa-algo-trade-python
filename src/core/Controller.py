@@ -3,6 +3,7 @@ import logging
 from config.Config import getBrokerAppConfig
 from models.BrokerAppDetails import BrokerAppDetails
 from loginmgmt.ZerodhaLogin import ZerodhaLogin
+from loginmgmt.ICICIDirectLogin import ICICIDirectLogin
 
 class Controller:
   brokerLogin = None # static variable
@@ -23,6 +24,8 @@ class Controller:
     # Other brokers - not implemented
     #elif Controller.brokerName == 'fyers':
       #Controller.brokerLogin = FyersLogin(brokerAppDetails)
+    elif Controller.brokerName == 'icicidirect':
+      Controller.brokerLogin = ICICIDirectLogin(brokerAppDetails)
 
     redirectUrl = Controller.brokerLogin.login(args)
     return redirectUrl

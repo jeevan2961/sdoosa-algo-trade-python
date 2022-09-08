@@ -8,3 +8,8 @@ class BrokerLoginAPI(MethodView):
   def get(self):
     redirectUrl = Controller.handleBrokerLogin(request.args)
     return redirect(redirectUrl, code=302)
+  
+  def post(self):
+    print(request)
+    redirectUrl = Controller.handleBrokerLogin(request.form)
+    return redirect(redirectUrl, code=302)
