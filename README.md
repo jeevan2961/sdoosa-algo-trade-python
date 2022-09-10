@@ -7,3 +7,6 @@ This is in the context of Indian stock exchanges and brokers.
 Here is the youtube playlist with 10+ videos explaining the whole project with live trading demo.
 
 https://www.youtube.com/playlist?list=PL-yBsBIJqqBn6oMMgLjvhCTNT-zLXYmoW
+
+1. Added functionality to login through ICICIDirect API
+2. Fetching ICICIdirect instruments and using them as pandas dataframes for nse and nfo seperately

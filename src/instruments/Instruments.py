@@ -1,6 +1,12 @@
 import os
 import logging
 import json
+import urllib
+from io import BytesIO
+from zipfile import ZipFile
+from urllib.request import urlopen
+from io import StringIO
+import pandas as pd
 
 from config.Config import getServerConfig, getTimestampsData, saveTimestampsData
 from core.Controller import Controller
@@ -10,6 +16,8 @@ class Instruments:
   instrumentsList = None
   symbolToInstrumentMap = None
   tokenToInstrumentMap = None
+  icici_nse_instruments = None
+  icici_nfo_instruments = None
 
   @staticmethod
   def shouldFetchFromServer():
@@ -32,7 +40,11 @@ class Instruments:
   @staticmethod
   def loadInstruments():
     serverConfig = getServerConfig()
-    instrumentsFilepath = os.path.join(serverConfig['deployDir'], 'instruments.json')
+    if Controller.brokerName=='icicidirect':
+      file_name='instruments_icici.json'
+    else:
+      file_name='instruments.json'
+    instrumentsFilepath = os.path.join(serverConfig['deployDir'], file_name)
     if os.path.exists(instrumentsFilepath) == False:
       logging.warn('Instruments: instrumentsFilepath %s does not exist', instrumentsFilepath)
       return [] # returns empty list
@@ -45,7 +57,11 @@ class Instruments:
   @staticmethod
   def saveInstruments(instruments = []):
     serverConfig = getServerConfig()
-    instrumentsFilepath = os.path.join(serverConfig['deployDir'], 'instruments.json')
+    if Controller.brokerName=='icicidirect':
+      file_name='instruments_icici.json'
+    else:
+      file_name='instruments.json'
+    instrumentsFilepath = os.path.join(serverConfig['deployDir'], file_name)
     with open(instrumentsFilepath, 'w') as isdFile:
       json.dump(instruments, isdFile, indent=2, default=str)
     logging.info('Instruments: Saved %d instruments to file %s', len(instruments), instrumentsFilepath)
@@ -53,16 +69,52 @@ class Instruments:
     Instruments.updateLastSavedTimestamp()
 
   @staticmethod
+  def downloadICICIDirectInstruments():
+    download_link = "https://directlink.icicidirect.com/NewSecurityMaster/SecurityMaster.zip"
+    resp = urlopen(download_link)
+    zipfile = ZipFile(BytesIO(resp.read()))
+    # zipfile.namelist()
+    # Reading zip files for NSE and FNO
+    NSEinstruments = zipfile.read('NSEScripMaster.txt')
+    FONSEinstruments = zipfile.read('FONSEScripMaster.txt')
+    df = pd.read_csv(StringIO(str(NSEinstruments, 'utf-8')))
+    df_nfo = pd.read_csv(StringIO(str(FONSEinstruments, 'utf-8')))
+    # Removing quotes from the headers for nse data
+    headers = df.columns
+    headers_no_quotes = []
+    for header in headers:
+        headers_no_quotes.append(header.strip(' \"'))
+    df.columns = headers_no_quotes
+    ## Removing quotes from headers from FNO data
+    headers_nfo = df_nfo.columns
+    headers_no_quotes_nfo = []
+    for header in headers_nfo:
+        headers_no_quotes_nfo.append(header.strip(' \"'))
+    df_nfo.columns = headers_no_quotes_nfo
+    ## saving as jsons files
+    df_json = df.to_dict()
+    df_nfo_json = df_nfo.to_dict()
+    out = {'df_nse': df_json,
+          'df_nfo': df_nfo_json
+          }
+    return out
+
+
+  @staticmethod
   def fetchInstrumentsFromServer():
     instrumentsList = []
     try:
-      brokerHandle = Controller.getBrokerLogin().getBrokerHandle()
-      logging.info('Going to fetch instruments from server...')
-      instrumentsList = brokerHandle.instruments('NSE')
-      instrumentsListFnO = brokerHandle.instruments('NFO')
-      # Add FnO instrument list to the main list
-      instrumentsList.extend(instrumentsListFnO)
-      logging.info('Fetched %d instruments from server.', len(instrumentsList))
+      if Controller.brokerName=='icicidirect':
+        instrumentsList = Instruments.downloadICICIDirectInstruments()
+        logging.info('Fetched %d instruments from server.', len(instrumentsList))
+      else:
+        brokerHandle = Controller.getBrokerLogin().getBrokerHandle()
+        logging.info('Going to fetch instruments from server...')
+        instrumentsList = brokerHandle.instruments('NSE')
+        instrumentsListFnO = brokerHandle.instruments('NFO')
+        # Add FnO instrument list to the main list
+        instrumentsList.extend(instrumentsListFnO)
+        logging.info('Fetched %d instruments from server.', len(instrumentsList))
     except Exception as e:
       logging.exception("Exception while fetching instruments from server")
     return instrumentsList
@@ -83,16 +135,19 @@ class Instruments:
       print("Could not fetch/load instruments data. Hence exiting the app.")
       logging.error("Could not fetch/load instruments data. Hence exiting the app.");
       exit(-2)
-    
-    Instruments.symbolToInstrumentMap = {}
-    Instruments.tokenToInstrumentMap = {}
-    for isd in instrumentsList:
-      tradingSymbol = isd['tradingsymbol']
-      instrumentToken = isd['instrument_token']
-      # logging.info('%s = %d', tradingSymbol, instrumentToken)
-      Instruments.symbolToInstrumentMap[tradingSymbol] = isd
-      Instruments.tokenToInstrumentMap[instrumentToken] = isd
-    
+    if Controller.brokerName=='icicidirect':
+      Instruments.icici_nse_instruments = pd.DataFrame(instrumentsList['df_nse'])
+      Instruments.icici_nfo_instruments = pd.DataFrame(instrumentsList['df_nfo'])
+    else:
+      Instruments.symbolToInstrumentMap = {}
+      Instruments.tokenToInstrumentMap = {}
+      for isd in instrumentsList:
+        tradingSymbol = isd['tradingsymbol']
+        instrumentToken = isd['instrument_token']
+        # logging.info('%s = %d', tradingSymbol, instrumentToken)
+        Instruments.symbolToInstrumentMap[tradingSymbol] = isd
+        Instruments.tokenToInstrumentMap[instrumentToken] = isd
+      
     logging.info('Fetching instruments done. Instruments count = %d', len(instrumentsList))
     Instruments.instrumentsList = instrumentsList # assign the list to static variable
     return instrumentsList
