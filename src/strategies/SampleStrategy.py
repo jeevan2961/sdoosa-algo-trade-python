@@ -7,6 +7,9 @@ from utils.Utils import Utils
 from trademgmt.Trade import Trade
 from trademgmt.TradeManager import TradeManager
 
+from core.Controller import Controller
+from instruments.Instruments import Instruments
+
 # Each strategy has to be derived from BaseStrategy
 class SampleStrategy(BaseStrategy):
   __instance = None
@@ -26,13 +29,18 @@ class SampleStrategy(BaseStrategy):
     super().__init__("SAMPLE")
     # Initialize all the properties specific to this strategy
     self.productType = ProductType.MIS
-    self.symbols = ["SBIN", "INFY", "TATASTEEL", "RELIANCE", "HDFCBANK", "CIPLA"]
+    # exchange_symbols = ["SBIN", "INFY", "TATASTEEL", "RELIANCE", "HDFCBANK", "CIPLA"]
+    exchange_symbols = ["PNB"]
+    if Controller.brokerName=='icicidirect':
+      self.symbols = [Instruments.getStockCodeFromExchangeCode(x) for x in exchange_symbols]
+    else:
+      self.symbols = exchange_symbols
     self.slPercentage = 1.1
     self.targetPercentage = 2.2
-    self.startTimestamp = Utils.getTimeOfToDay(9, 30, 0) # When to start the strategy. Default is Market start time
+    self.startTimestamp = Utils.getTimeOfToDay(2, 30, 0) # When to start the strategy. Default is Market start time
     self.stopTimestamp = Utils.getTimeOfToDay(14, 30, 0) # This is not square off timestamp. This is the timestamp after which no new trades will be placed under this strategy but existing trades continue to be active.
     self.squareOffTimestamp = Utils.getTimeOfToDay(15, 0, 0) # Square off time
-    self.capital = 3000 # Capital to trade (This is the margin you allocate from your broker account for this strategy)
+    self.capital = 100 # Capital to trade (This is the margin you allocate from your broker account for this strategy)
     self.leverage = 2 # 2x, 3x Etc
     self.maxTradesPerDay = 3 # Max number of trades per day under this strategy
     self.isFnO = False # Does this strategy trade in FnO or not

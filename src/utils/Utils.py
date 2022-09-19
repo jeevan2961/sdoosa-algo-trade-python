@@ -234,3 +234,20 @@ class Utils:
       return inputPrice - remainder
     else:
       return inputPrice + (nearestMultiple - remainder)
+    
+  @staticmethod
+  def icicidirectTimeFormat(input_date):
+    output_time = input_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z"
+    return output_time
+
+  @staticmethod
+  def icicidirectFnOsymbolToValues(tradingSymbol):
+    l = tradingSymbol.split('#')
+    date_converted = Utils.icicidirectTimeFormat(datetime.strptime(l[2], "%d-%b-%Y"))
+    right = "others" if l[4]=="XX" else "call" if l[4]=='CE' else "put"
+    values = {"stockcode":l[0],
+     'Series':'futures' if l[1]=='FUTURE' else 'options',
+     'ExpiryDate':date_converted, 
+     'StrikePrice':l[3], 
+     'OptionType':right}
+    return values

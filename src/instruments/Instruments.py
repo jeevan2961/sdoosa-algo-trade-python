@@ -17,7 +17,7 @@ class Instruments:
   symbolToInstrumentMap = None
   tokenToInstrumentMap = None
   icici_nse_instruments = None
-  icici_nfo_instruments = None
+  # icici_nfo_instruments = None
 
   @staticmethod
   def shouldFetchFromServer():
@@ -91,13 +91,27 @@ class Instruments:
     for header in headers_nfo:
         headers_no_quotes_nfo.append(header.strip(' \"'))
     df_nfo.columns = headers_no_quotes_nfo
-    ## saving as jsons files
-    df_json = df.to_dict()
-    df_nfo_json = df_nfo.to_dict()
-    out = {'df_nse': df_json,
-          'df_nfo': df_nfo_json
-          }
-    return out
+
+    ## saving dataframes
+    # df_nse = df.rename(columns={'SymbolName': 'tradingsymbol', 'Token': 'instrument_token'})
+    # Instruments.icici_nse_instruments = df_nse
+
+    ## adding symbolname columns
+    df['SymbolName']= df['ShortName']
+    df_nfo['SymbolName'] = df_nfo['ShortName'].map(str) +"#"+df_nfo['Series'].map(str) \
+      +'#'+df_nfo['ExpiryDate'].map(str) +'#'+df_nfo['StrikePrice'].map(str) \
+      +'#'+df_nfo['OptionType'].map(str) 
+    instrumentsList = df.append(df_nfo)
+    instrumentsList = instrumentsList.rename(columns={'SymbolName': 'tradingsymbol', 'Token': 'instrument_token'})
+    instrumentsList = instrumentsList.to_dict('records')
+    
+    # ## saving as jsons files
+    # df_json = df.to_dict()
+    # df_nfo_json = df_nfo.to_dict()
+    # out = {'df_nse': df_json,
+    #       'df_nfo': df_nfo_json
+    #       }
+    return instrumentsList
 
 
   @staticmethod
@@ -136,18 +150,19 @@ class Instruments:
       logging.error("Could not fetch/load instruments data. Hence exiting the app.");
       exit(-2)
     if Controller.brokerName=='icicidirect':
-      Instruments.icici_nse_instruments = pd.DataFrame(instrumentsList['df_nse'])
-      Instruments.icici_nfo_instruments = pd.DataFrame(instrumentsList['df_nfo'])
-    else:
-      Instruments.symbolToInstrumentMap = {}
-      Instruments.tokenToInstrumentMap = {}
-      for isd in instrumentsList:
-        tradingSymbol = isd['tradingsymbol']
-        instrumentToken = isd['instrument_token']
-        # logging.info('%s = %d', tradingSymbol, instrumentToken)
-        Instruments.symbolToInstrumentMap[tradingSymbol] = isd
-        Instruments.tokenToInstrumentMap[instrumentToken] = isd
-      
+      df = pd.DataFrame(instrumentsList)
+      df_nse = df[~df['Series'].isin(['FUTURE','OPTION'])]
+      Instruments.icici_nse_instruments = df_nse
+       
+    Instruments.symbolToInstrumentMap = {}
+    Instruments.tokenToInstrumentMap = {}
+    for isd in instrumentsList:
+      tradingSymbol = isd['tradingsymbol']
+      instrumentToken = isd['instrument_token']
+      # logging.info('%s = %d', tradingSymbol, instrumentToken)
+      Instruments.symbolToInstrumentMap[tradingSymbol] = isd
+      Instruments.tokenToInstrumentMap[instrumentToken] = isd
+    
     logging.info('Fetching instruments done. Instruments count = %d', len(instrumentsList))
     Instruments.instrumentsList = instrumentsList # assign the list to static variable
     return instrumentsList
@@ -159,4 +174,8 @@ class Instruments:
   @staticmethod
   def getInstrumentDataByToken(instrumentToken):
     return Instruments.tokenToInstrumentMap[instrumentToken]
+
+  @staticmethod
+  def getStockCodeFromExchangeCode(ExchangeCode):
+    return Instruments.icici_nse_instruments[Instruments.icici_nse_instruments['ExchangeCode']==ExchangeCode].iloc[0]['tradingsymbol']
     

@@ -7,11 +7,13 @@ from datetime import datetime
 from config.Config import getServerConfig
 from core.Controller import Controller
 from ticker.ZerodhaTicker import ZerodhaTicker
+from ticker.ICICIDirectTicker import ICICIDirectTicker
 from trademgmt.Trade import Trade
 from trademgmt.TradeState import TradeState
 from trademgmt.TradeExitReason import TradeExitReason
 from trademgmt.TradeEncoder import TradeEncoder
 from ordermgmt.ZerodhaOrderManager import ZerodhaOrderManager
+from ordermgmt.ICICIDirectOrderManager import ICICIDirectOrderManager
 from ordermgmt.OrderInputParams import OrderInputParams
 from ordermgmt.OrderModifyParams import OrderModifyParams
 from ordermgmt.Order import Order
@@ -55,6 +57,8 @@ class TradeManager:
       TradeManager.ticker = ZerodhaTicker()
     #elif brokerName == "fyers" # not implemented
     # ticker = FyersTicker()
+    elif brokerName == 'icicidirect':
+      TradeManager.ticker = ICICIDirectTicker()
 
     TradeManager.ticker.startTicker()
     TradeManager.ticker.registerListener(TradeManager.tickerListener)
@@ -447,6 +451,8 @@ class TradeManager:
     if brokerName == "zerodha":
       orderManager = ZerodhaOrderManager()
     #elif brokerName == "fyers": # Not implemented
+    elif brokerName == 'icicidirect':
+      orderManager = ICICIDirectOrderManager()
     return orderManager
 
   @staticmethod
