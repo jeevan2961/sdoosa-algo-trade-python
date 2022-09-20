@@ -48,7 +48,7 @@ class ICICIDirectTicker(BaseTicker):
       tokens.append(token)
 
     logging.info('BreezeConnect Subscribing tokens %s', tokens)
-    self.ticker.subscribe(tokens)
+    self.ticker.subscribe_feeds(tokens)
 
   def unregisterSymbols(self, symbols):
     tokens = []
@@ -59,27 +59,30 @@ class ICICIDirectTicker(BaseTicker):
       tokens.append(token)
 
     logging.info('BreezeConnect Unsubscribing tokens %s', tokens)
-    self.ticker.unsubscribe(tokens)
+    self.ticker.unsubscribe_feeds(tokens)
 
-  def on_ticks(self, ws, brokerTicks):
+  def on_ticks(self, brokerTicks):
     # convert broker specific Ticks to our system specific Ticks (models.TickData) and pass to super class function
     ticks = []
-    for bTick in brokerTicks:
-      isd = Instruments.getInstrumentDataByToken(bTick['instrument_token'])
-      tradingSymbol = isd['tradingsymbol']
-      tick = TickData(tradingSymbol)
-      tick.lastTradedPrice = bTick['last_price']
-      tick.lastTradedQuantity = bTick['last_quantity']
-      tick.avgTradedPrice = bTick['average_price']
-      tick.volume = bTick['volume']
-      tick.totalBuyQuantity = bTick['buy_quantity']
-      tick.totalSellQuantity = bTick['sell_quantity']
-      tick.open = bTick['ohlc']['open']
-      tick.high = bTick['ohlc']['high']
-      tick.low = bTick['ohlc']['low']
-      tick.close = bTick['ohlc']['close']
-      tick.change = bTick['change']
-      ticks.append(tick)
+    print(brokerTicks)
+    bTick = brokerTicks
+    # for bTick in brokerTicks:
+    # print(bTick)
+    isd = Instruments.getInstrumentDataByToken(bTick['symbol'])
+    tradingSymbol = isd['tradingsymbol']
+    tick = TickData(tradingSymbol)
+    tick.lastTradedPrice = bTick['last']
+    tick.lastTradedQuantity = bTick['ltq']
+    tick.avgTradedPrice = bTick['avgPrice']
+    # tick.volume = bTick['ttv']
+    # tick.totalBuyQuantity = bTick['buy_quantity']
+    # tick.totalSellQuantity = bTick['sell_quantity']
+    tick.open = bTick['open']
+    tick.high = bTick['high']
+    tick.low = bTick['low']
+    tick.close = bTick['close']
+    tick.change = bTick['change']
+    ticks.append(tick)
       
     self.onNewTicks(ticks)
 

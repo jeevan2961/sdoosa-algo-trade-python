@@ -103,6 +103,7 @@ class Instruments:
       +'#'+df_nfo['OptionType'].map(str) 
     instrumentsList = df.append(df_nfo)
     instrumentsList = instrumentsList.rename(columns={'SymbolName': 'tradingsymbol', 'Token': 'instrument_token'})
+    instrumentsList['instrument_token'] = '4.1!' + instrumentsList['instrument_token'].astype(str)
     instrumentsList = instrumentsList.to_dict('records')
     
     # ## saving as jsons files
