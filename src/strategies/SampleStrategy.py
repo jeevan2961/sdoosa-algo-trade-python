@@ -28,13 +28,13 @@ class SampleStrategy(BaseStrategy):
     # Call Base class constructor
     super().__init__("SAMPLE")
     # Initialize all the properties specific to this strategy
-    self.productType = ProductType.MIS
     # exchange_symbols = ["SBIN", "INFY", "TATASTEEL", "RELIANCE", "HDFCBANK", "CIPLA"]
     exchange_symbols = ["PNB"]
     if Controller.brokerName=='icicidirect':
       self.symbols = [Instruments.getStockCodeFromExchangeCode(x) for x in exchange_symbols]
     else:
       self.symbols = exchange_symbols
+    self.productType = ProductType.MARGIN
     self.slPercentage = 1.1
     self.targetPercentage = 2.2
     self.startTimestamp = Utils.getTimeOfToDay(2, 30, 0) # When to start the strategy. Default is Market start time

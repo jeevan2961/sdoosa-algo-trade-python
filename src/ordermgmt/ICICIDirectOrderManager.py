@@ -16,8 +16,11 @@ class ICICIDirectOrderManager(BaseOrderManager):
     super().__init__("icicidirect")
 
   def placeOrder(self, orderInputParams):
-    logging.info('%s: Going to place order with params %s', self.broker, orderInputParams)
     brokerhandle = self.brokerHandle
+    if orderInputParams.triggerPrice !=0:
+      orderInputParams.price = orderInputParams.triggerPrice
+      orderInputParams.orderType = OrderType.SL_LIMIT
+    logging.info('%s: Going to place order with params %s', self.broker, orderInputParams)
     try:
       if orderInputParams.isFnO == False:
         orderId = brokerhandle.place_order(
@@ -26,7 +29,7 @@ class ICICIDirectOrderManager(BaseOrderManager):
           product="margin",
           action=self.convertToBrokerDirection(orderInputParams.direction),
           order_type=self.convertToBrokerOrderType(orderInputParams.orderType),
-          stoploss="0",
+          stoploss=str(orderInputParams.triggerPrice),
           quantity=str(orderInputParams.qty),
           price=str(orderInputParams.price),
           validity="day"
@@ -53,9 +56,10 @@ class ICICIDirectOrderManager(BaseOrderManager):
 
       logging.info('%s: Order placed successfully, orderId = %s', self.broker, orderId)
       order = Order(orderInputParams)
-      order.orderId = orderId
+      order.orderId = orderId['Success']['order_id']
       order.orderPlaceTimestamp = Utils.getEpoch()
       order.lastOrderUpdateTimestamp = Utils.getEpoch()
+      order.message = orderId['Success']['message']
       return order
     except Exception as e:
       logging.info('%s Order placement failed: %s', self.broker, str(e))
@@ -127,8 +131,8 @@ class ICICIDirectOrderManager(BaseOrderManager):
     icicidirect = self.brokerHandle
     orderBook = None
     try:
-      from_datetime = datetime.today().replace(hour=0, minute=0,second=0,microsecond=0).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-      to_datetime = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+      from_datetime = Utils.icicidirectTimeFormat(datetime.today().replace(hour=0, minute=0,second=0,microsecond=0))
+      to_datetime = Utils.icicidirectTimeFormat(datetime.now())
       orderBook_nse = (icicidirect.get_order_list(exchange_code='NSE',from_date=from_datetime, to_date=to_datetime))['Success']
       orderBook_nfo = (icicidirect.get_order_list(exchange_code='NFO',from_date=from_datetime, to_date=to_datetime))['Success']
       orderBook = (orderBook_nse + orderBook_nfo) if (orderBook_nse and orderBook_nfo)!= None else \
@@ -152,12 +156,16 @@ class ICICIDirectOrderManager(BaseOrderManager):
         foundOrder.cancelledQty = int(bOrder['cancelled_quantity'])
         foundOrder.pendingQty = int(bOrder['pending_quantity'])
         foundOrder.filledQty = foundOrder.qty - (foundOrder.cancelledQty + foundOrder.pendingQty)
-        foundOrder.orderStatus = bOrder['status']
+        order_status = (bOrder['status']).upper()
+        if order_status=='EXECUTED':
+          foundOrder.orderStatus = OrderStatus.COMPLETE
+        else:
+          foundOrder.orderStatus = order_status
         if foundOrder.orderStatus == OrderStatus.CANCELLED and foundOrder.filledQty > 0:
           # Consider this case as completed in our system as we cancel the order with pending qty when strategy stop timestamp reaches
-          foundOrder.orderStatus = OrderStatus.COMPLETED
+          foundOrder.orderStatus = OrderStatus.EXECUTED
         foundOrder.price = float(bOrder['price'])
-        foundOrder.triggerPrice = float(bOrder['SLTP_price'])  ## SLTP_price
+        foundOrder.triggerPrice = float(bOrder['stoploss'])  ## SLTP_price
         foundOrder.averagePrice = float(bOrder['average_price'])
         logging.info('%s Updated order %s', self.broker, foundOrder)
         numOrdersUpdated += 1
@@ -183,9 +191,9 @@ class ICICIDirectOrderManager(BaseOrderManager):
     elif orderType == OrderType.MARKET:
       return "market"
     elif orderType == OrderType.SL_MARKET:
-      return "stoploss"
+      return "limit"
     elif orderType == OrderType.SL_LIMIT:
-      return "stoploss"
+      return "limit"
     return None
 
   def convertToBrokerDirection(self, direction):
