@@ -253,7 +253,7 @@ class TradeManager:
     if trade.entryOrder.orderStatus == OrderStatus.CANCELLED or trade.entryOrder.orderStatus == OrderStatus.REJECTED:
       trade.tradeState = TradeState.CANCELLED
 
-    trade.filledQty = trade.entryOrder.filledQty
+    trade.filledQty = trade.entryOrder.filledQty ##issue -> not updating
     if trade.filledQty > 0:
       trade.entry = trade.entryOrder.averagePrice
     # Update the current market price and calculate pnl
