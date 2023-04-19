@@ -1,7 +1,7 @@
 {
   "broker": "icicidirect",
-  "clientID": "ESRINATH",
-  "appKey": "7027752V3057U2G5$24U6479529&ka9c",
-  "appSecret": "67*1mC5594gf968UM6Z032513n$4!48a",
+  "clientID": "*****",
+  "appKey": "******",
+  "appSecret": "******",
   "redirectUrl": "http://localhost:8080/apis/broker/login/icicidirect"
 }
